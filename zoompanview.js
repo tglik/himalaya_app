@@ -1,12 +1,18 @@
 import React, { Component } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
 import {
   PanGestureHandler,
   State,
   PinchGestureHandler,
 } from 'react-native-gesture-handler';
 
-import Animated, { EasingNode } from 'react-native-reanimated';
+import Animated, { Easing } from 'react-native-reanimated';
+
+// setInterval(() => {
+//   let iters = 1e8,
+//     sum = 0;
+//   while (iters-- > 0) sum += iters;
+// }, 300);
 
 const {
   set,
@@ -15,16 +21,23 @@ const {
   or,
   add,
   sub,
+  pow,
   min,
   max,
+  debug,
   multiply,
   divide,
   lessThan,
+  spring,
+  defined,
   decay,
   timing,
+  call,
   diff,
+  acc,
   not,
   abs,
+  block,
   startClock,
   stopClock,
   clockRunning,
@@ -68,7 +81,7 @@ function speed(value) {
 }
 
 const MIN_SCALE = 1;
-const MAX_SCALE = 2;
+const MAX_SCALE = 10;
 
 function scaleRest(value) {
   return cond(
@@ -105,7 +118,7 @@ function runTiming(clock, value, dest, startStopClock = true) {
   const config = {
     toValue: new Value(0),
     duration: 300,
-    easing: EasingNode.inOut(EasingNode.cubic),
+    easing: Easing.inOut(Easing.cubic),
   };
 
   return [
@@ -246,12 +259,24 @@ function bouncy(
   );
 }
 
-const WIDTH = 300;
-const HEIGHT = 300;
+const measureElement = element => {
+  const DOMNode = ReactDOM.findDOMNode(element);
+  return {
+    width: DOMNode.offsetWidth,
+    height: DOMNode.offsetHeight,
+  };
+}
 
-export default class ImageViewer extends Component {
+export default class ZoomPanView extends Component {
   pinchRef = React.createRef();
   panRef = React.createRef();
+
+  state = {
+    contentHeight: 0,
+    contentWidth: 0,
+  }
+
+  
   constructor(props) {
     super(props);
 
@@ -325,7 +350,7 @@ export default class ImageViewer extends Component {
       0,
       multiply(-1, this._focalDisplacementX)
     );
-    const panLowX = add(panUpX, multiply(-WIDTH, add(max(1, this._scale), -1)));
+    const panLowX = add(panUpX, multiply(multiply(-1, this.state.contentWidth), add(max(1, this._scale), -1)));
     this._panTransX = set(
       panTransX,
       bouncy(
@@ -346,7 +371,7 @@ export default class ImageViewer extends Component {
     );
     const panLowY = add(
       panUpY,
-      multiply(-HEIGHT, add(max(1, this._scale), -1))
+      multiply(multiply(-1, this.state.contentHeight), add(this._scale, -1))
     );
     this._panTransY = set(
       panTransY,
@@ -361,14 +386,19 @@ export default class ImageViewer extends Component {
     );
   }
 
+  find_dimesions(layout){
+    const {x, y, width, height} = layout;
+    this.setState({ contentHeight: height, contentWidth: width})
+  }
+
   render() {
     // The below two animated values makes it so that scale appears to be done
     // from the top left corner of the image view instead of its center. This
     // is required for the "scale focal point" math to work correctly
-    const scaleTopLeftFixX = divide(multiply(WIDTH, add(this._scale, -1)), 2);
-    const scaleTopLeftFixY = divide(multiply(HEIGHT, add(this._scale, -1)), 2);
+    const scaleTopLeftFixX = divide(multiply(this.state.contentWidth, add(this._scale, -1)), 2);
+    const scaleTopLeftFixY = divide(multiply(this.state.contentHeight, add(this._scale, -1)), 2);
     return (
-      <View style={styles.wrapper}>
+      <View onLayout={(event) => { this.find_dimesions(event.nativeEvent.layout) }} style={styles.wrapper}>
         <PinchGestureHandler
           ref={this.pinchRef}
           simultaneousHandlers={this.panRef}
@@ -382,9 +412,8 @@ export default class ImageViewer extends Component {
               simultaneousHandlers={this.pinchRef}
               onGestureEvent={this._onPanEvent}
               onHandlerStateChange={this._onPanEvent}>
-              <Animated.Image
-                style={[
-                  styles.image,
+              <Animated.View
+                style={
                   {
                     transform: [
                       { translateX: this._panTransX },
@@ -395,11 +424,11 @@ export default class ImageViewer extends Component {
                       { translateY: scaleTopLeftFixY },
                       { scale: this._scale },
                     ],
-                  },
-                ]}
-                resizeMode="stretch"
-                source={this.props.source}
-              />
+                  }
+                }>
+                   {this.props.children}
+
+              </Animated.View>
             </PanGestureHandler>
           </Animated.View>
         </PinchGestureHandler>
@@ -408,35 +437,17 @@ export default class ImageViewer extends Component {
   }
 }
 
-// export default class Example extends Component {
-//   static navigationOptions = {
-//     title: 'Image Viewer Example',
-//   };
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
+  },
+  wrapper: {
+    //borderColor: 'green',
+    //borderWidth: 2,
+    overflow: 'hidden',
+  },
 
-//   render() {
-//     return (
-//       <View style={styles.container}>
-//         <Viewer source={require('./grid.png')} />
-//       </View>
-//     );
-//   }
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     backgroundColor: '#F5FCFF',
-//   },
-//   wrapper: {
-//     borderColor: 'green',
-//     borderWidth: 2,
-//     overflow: 'hidden',
-//   },
-//   image: {
-//     width: 300,
-//     height: 300,
-//     backgroundColor: 'black',
-//   },
-// });
+});
