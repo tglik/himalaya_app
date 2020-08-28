@@ -6,20 +6,27 @@ import {
   PinchGestureHandler,
 } from 'react-native-gesture-handler';
 
-import Animated, { add, block, cond, divide, event, eq, max, min, Value, set, multiply, useCode} from 'react-native-reanimated';
+import Animated, { and, add, block, cond, divide, event, eq, max, min, or, sub, Value, set, multiply, useCode} from 'react-native-reanimated';
 
 const MIN_SCALE = 1
 const MAX_SCALE = 5
 
 export default (props) => {
+    // Content dimentions
     const contentWidth = new Value(0)
-    const contentHeight = new Value(650)
+    const contentHeight = new Value(0)
     
+    const set_dimesions = (layout) => {
+        const {x, y, width, height} = layout;
+        contentWidth.setValue(width);
+        contentHeight.setValue(height);
+    }
+
     // PINCH
     const pinchScale = new Value(1);
     const pinchFocalX = new Value(0);
     const pinchFocalY = new Value(0);
-    const pinchState = new Value(State.UNDETERMINED);
+    const pinchState = new Value(State.END);
 
     const pinchGestureHandler = event ([{ nativeEvent: {
         state: pinchState,
@@ -31,7 +38,7 @@ export default (props) => {
     // PAN
     const panX = new Value(0);
     const panY = new Value(0);
-    const panState = new Value(State.UNDETERMINED);
+    const panState = new Value(State.END);
 
 
     const panGestureHandler = event ([{ nativeEvent: {
@@ -49,31 +56,37 @@ export default (props) => {
     const scale = new Value(1)
     const translationX = new Value(0)
     const translationY = new Value(0)
+    const origFocalX = new Value(0)
+    const origFocalY = new Value(0)
 
-    // Set dimention changes
-    const find_dimesions = (layout) => {
-        const {x, y, width, height} = layout;
-        contentWidth.setValue(width);
-        contentHeight.setValue(height);
-    }
-
+    // Distance of scaled coord to real coord frame
+    const adjustedFocalX = sub(pinchFocalX, divide(contentWidth, 2))
+    const adjustedFocalY = sub(pinchFocalY, divide(contentHeight, 2))
     const xInset = divide(multiply(contentWidth, add(scale, -1)), 2)
     const yInset = divide(multiply(contentHeight, add(scale, -1)), 2)
 
+    // Set code hooks to gesture state changes
     useCode(
         () =>
             block([
-                cond(eq(pinchState, State.ACTIVE), [
-                    set(scale, min(max(multiply(prevScale, pinchScale), MIN_SCALE), MAX_SCALE)),
-                ]),
-                cond(eq(pinchState, State.END), [
-                    set(prevScale, scale),
+                cond(eq(pinchState, State.BEGAN), [
+                    set(origFocalX, adjustedFocalX),
+                    set(origFocalY, adjustedFocalY),
                 ]),
                 cond(eq(panState, State.ACTIVE), [
-                    set(translationX, min(max(add(prevX, panX), multiply(xInset, -1)), xInset)),
-                    set(translationY, min(max(add(prevY, panY), multiply(yInset, -1)), yInset)),
+                    set(translationX, add(prevX, panX)),
+                    set(translationY, add(prevY, panY)),
                 ]),
-                cond(eq(panState, State.END), [
+                cond(eq(pinchState, State.ACTIVE), [
+                    set(scale, multiply(prevScale, pinchScale)),
+                    set(translationX, sub(prevX, multiply(origFocalX, add(scale, -1)))),
+                    set(translationY, sub(prevY, multiply(origFocalY, add(scale, -1)))),
+                ]),
+                set(scale, min(max(scale, MIN_SCALE), MAX_SCALE)),
+                set(translationX, min(max(translationX, multiply(xInset, -1)), xInset)),
+                set(translationY, min(max(translationY, multiply(yInset, -1)), yInset)),
+                cond(and(eq(pinchState, State.END),eq(panState, State.END)), [
+                    set(prevScale, scale),
                     set(prevX, translationX),
                     set(prevY, translationY),
                 ]),
@@ -82,7 +95,7 @@ export default (props) => {
     );
     
     return (
-        <View  onLayout={(event) => { find_dimesions(event.nativeEvent.layout) }} style={styles.wrapper}>
+        <View  onLayout={(event) => { set_dimesions(event.nativeEvent.layout) }} style={styles.wrapper}>
             <PanGestureHandler
             onGestureEvent={panGestureHandler}
             onHandlerStateChange={panGestureHandler}
@@ -94,11 +107,12 @@ export default (props) => {
                     >
                         <Animated.View 
                         style={{
-                            transform: [{ 
-                                translateX: translationX,
-                                translateY: translationY,
-                                scale: scale 
-                            }]
+                            transform: [
+                                {translateX: translationX},
+                                {translateY: translationY},
+                                {scale: scale},
+                                                              
+                            ]
                         }}
                         >
                             {props.children}
