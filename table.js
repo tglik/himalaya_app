@@ -1,12 +1,14 @@
 import React from 'react';
-import { Dimensions, ImageBackground, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, ImageBackground, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import ZoomPanView from './myzoompanview'
+import ZoomPanView from './zoompanview'
 
 
 function Piece(props) {
     return (
-        <View style={{ backgroundColor: props.color, width: 30, height: 30 }} />
+        <View  >
+            <Image source={props.source} style={{ width: 30, height: 30, resizeMode: 'stretch'}}/>
+        </View>
     );
 }
 
@@ -18,9 +20,16 @@ export default (props) => {
     return (
         <Animated.View style={styles.table}>
             <ZoomPanView>
-                <ImageBackground source={require('./assets/us-map.jpg')} style={styles.backimage}>
-                    <Piece color="red"/>
-                    <Piece color="blue"/>
+                <ImageBackground source={require('./assets/green_tex.jpg')} style={styles.backimage}>
+                    <Piece source={require('./assets/piece1.jpg')}/>
+                    <Piece source={require('./assets/piece2.jpg')}/>
+                    <Piece source={require('./assets/piece3.jpg')}/>
+                    <Piece source={require('./assets/piece4.jpg')}/>
+                    <Piece source={require('./assets/piece5.jpg')}/>
+                    <Piece source={require('./assets/piece6.jpg')}/>
+                    <Piece source={require('./assets/piece7.jpg')}/>
+                    <Piece source={require('./assets/piece8.jpg')}/>
+                    <Piece source={require('./assets/piece9.jpg')}/>
                 </ImageBackground>
             </ZoomPanView>
         </Animated.View>
@@ -30,8 +39,8 @@ export default (props) => {
 const styles = StyleSheet.create({
     table: {
         backgroundColor: '#fff',
-        height: 650,
-        width: 415,
+        // height: 650,
+        // width: 415,
         alignItems: 'center',
         justifyContent: 'center',
         borderColor: 'silver',
@@ -39,9 +48,10 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     backimage: {
-        height: 650,
+        height: 750,
         width: 415,
         alignItems: 'center',
         justifyContent: 'center',
+        resizeMode: 'stretch',
     }
   });

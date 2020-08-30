@@ -8,8 +8,8 @@ import Table from './table'
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>HimalayaSF</Text>
-      <Text>Virtual Space</Text>
+      {/* <Text>HimalayaSF</Text>
+      <Text>Virtual Space</Text> */}
       <Table name="maya" />
       <StatusBar style="auto" />
     </View>
