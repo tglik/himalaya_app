@@ -1,6 +1,6 @@
 import React from 'react';
 import { Dimensions, ImageBackground, StyleSheet } from 'react-native';
-import Animated, {add, block, cond, eq, event, set, Value, useCode} from 'react-native-reanimated';
+import Animated, {add, and, block, Clock, clockRunning, cond, eq, event, not, set, Value, useCode} from 'react-native-reanimated';
 import ZoomPanView from './zoompanview'
 import { PanGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
 import {timing} from 'react-native-redash';
@@ -24,6 +24,7 @@ function Piece(props) {
     const shadowOpacity = new Value(0);
     const zIndex = new Value(0)
     const rotate = new Value(0)
+    const clock = new Clock()
 
 
     const panGestureHandler = event ([{ nativeEvent: {
@@ -39,11 +40,11 @@ function Piece(props) {
     useCode(
         () =>
             block([
-                cond(eq(tapState, State.BEGAN), [
+                cond(and(eq(tapState, State.BEGAN), not(clockRunning(clock))), [
                     set(prevRotate, rotate)
                 ]),
                 cond(eq(tapState, State.END), [
-                    set(tapRotate, timing({ from:0, to: ROT_90 , duration: 250})),
+                    set(tapRotate, timing( {clock,  from:0, to: ROT_90 , duration: 250})),
                     set(rotate, add(prevRotate, tapRotate), ROT_360),
                 ]),
                 cond(eq(panState, State.ACTIVE), [
