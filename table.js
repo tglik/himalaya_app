@@ -1,14 +1,96 @@
 import React from 'react';
-import { Dimensions, Image, ImageBackground, StyleSheet, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { Dimensions, ImageBackground, StyleSheet } from 'react-native';
+import Animated, {add, block, cond, eq, event, set, Value, useCode} from 'react-native-reanimated';
 import ZoomPanView from './zoompanview'
+import { PanGestureHandler, State, TapGestureHandler } from 'react-native-gesture-handler';
+import {timing} from 'react-native-redash';
 
+
+const ROT_90 = 1.5708
+const ROT_360 = 6.28319
 
 function Piece(props) {
+    // PAN
+    const panX = new Value(0);
+    const panY = new Value(0);
+    const panState = new Value(State.END);
+    const prevX = new Value(0);
+    const prevY = new Value(0); 
+    const translationX = new Value(0);
+    const translationY = new Value(0); 
+    const tapState = new Value(State.UNDETERMINED);
+    const tapRotate = new Value(0);
+    const prevRotate = new Value(0)
+    const shadowOpacity = new Value(0);
+    const zIndex = new Value(0)
+    const rotate = new Value(0)
+
+
+    const panGestureHandler = event ([{ nativeEvent: {
+        translationX: panX,
+        translationY: panY,
+        state: panState,
+    }}])
+
+    const tapGestureHandler = event ([{ nativeEvent: {
+        state: tapState,
+    }}])
+
+    useCode(
+        () =>
+            block([
+                cond(eq(tapState, State.BEGAN), [
+                    set(prevRotate, rotate)
+                ]),
+                cond(eq(tapState, State.END), [
+                    set(tapRotate, timing({ from:0, to: ROT_90 , duration: 250})),
+                    set(rotate, add(prevRotate, tapRotate), ROT_360),
+                ]),
+                cond(eq(panState, State.ACTIVE), [
+                    set(translationX, add(prevX, panX)),
+                    set(translationY, add(prevY, panY)),
+                    set(shadowOpacity, 0.5),
+                    set(zIndex, 10),
+                ]),
+                cond(eq(panState, State.END), [
+                    set(prevX, translationX),
+                    set(prevY, translationY),
+                    set(shadowOpacity, 0),
+                    set(zIndex, 0),
+                ]),
+            ]),
+        [panState, tapState]
+    );
+
     return (
-        <View  >
-            <Image source={props.source} style={{ width: 30, height: 30, resizeMode: 'stretch'}}/>
-        </View>
+        <Animated.View  style={{
+            shadowColor: 'black',
+            shadowOffset: {
+                width: 2,
+                height: 2,
+            },
+            shadowOpacity: shadowOpacity,
+            shadowRadius: 1,
+            zIndex: zIndex,
+        }}>
+            <PanGestureHandler onGestureEvent={panGestureHandler} onHandlerStateChange={panGestureHandler}>
+                <Animated.View style={{
+                    transform: [
+                        {translateX: translationX},
+                        {translateY: translationY},
+                    ]}}>
+                    <TapGestureHandler onGestureEvent={tapGestureHandler} onHandlerStateChange={tapGestureHandler} numberOfTaps={1}>
+                        <Animated.Image source={props.source} style={
+                            { width: 30, 
+                            height: 30, 
+                            resizeMode: 'stretch',
+                            transform: [
+                                {rotate: rotate},
+                            ]}}/>
+                    </TapGestureHandler>
+                </Animated.View>
+            </PanGestureHandler>
+        </Animated.View>
     );
 }
 
