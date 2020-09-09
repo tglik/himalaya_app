@@ -95,34 +95,24 @@ export default (props) => {
     );
     
     return (
-        <View  onLayout={(event) => { set_dimesions(event.nativeEvent.layout) }} style={styles.wrapper}>
+        <View  onLayout={(event) => { set_dimesions(event.nativeEvent.layout) }} style={props.style}>
             <PanGestureHandler
             onGestureEvent={panGestureHandler}
             onHandlerStateChange={panGestureHandler}
             >
-                <Animated.View>
+                <Animated.View style={{flex: 1, width: '100%'}}>
                     <PinchGestureHandler
                     onHandlerStateChange={pinchGestureHandler}
                     onGestureEvent={pinchGestureHandler}
                     >
-                        <Animated.View 
+                        <Animated.View
                         style={{
+                            flex: 1,
+                            width: '100%',
                             transform: [
                                 {translateX: translationX},
                                 {translateY: translationY},
                                 {scale: scale},
-
-                                // {translateX: panX},
-                                // {translateY: panY},
-                                // {translateX: prevX},
-                                // {translateY: prevY},
-                                // {scale: prevScale},
-                                // {translateX: origFocalX},
-                                // {translateY: origFocalY},
-                                // {scale: pinchScale},
-                                // {translateX: multiply(origFocalX, -1)},
-                                // {translateY: multiply(origFocalY, -1)},
-                                                              
                             ]
                         }}
                         >
@@ -134,12 +124,3 @@ export default (props) => {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    wrapper: {
-      //borderColor: 'green',
-      //borderWidth: 2,
-      overflow: 'hidden',
-    },
-  
-  });
