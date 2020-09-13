@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        resizeMode: 'stretch',
+        //resizeMode: 'stretch',
     },
     piece: {
         position: 'absolute',
